@@ -1,17 +1,13 @@
 import {
   LooseObject,
   VirtualReactElement,
+  VirtualReactElementProps,
   VirtualReactElementType,
 } from './type.ts';
 
 class Component {}
 
 const Fragment = Symbol.for('react.fragment');
-
-export interface ComponentFunction {
-  new (props: LooseObject): Component;
-  (props: LooseObject): VirtualReactElement | string;
-}
 
 const isVirtualReactElement = (e: unknown): e is VirtualReactElement =>
   typeof e === 'object';
@@ -32,22 +28,87 @@ const createTextElement = (text: string) => ({
 const createElement = (
   type: VirtualReactElementType,
   props: LooseObject = {},
-  ...children: VirtualReactElement[]
+  ...children: any[]
 ): VirtualReactElement => {
-  const normalizedChildren = children.map((c) => {
-    isVirtualReactElement(c) ? c : createTextElement(String(c));
-  });
+  const normalizedChildren: any = children.map((c) =>
+    isVirtualReactElement(c) ? c : createTextElement(String(c)),
+  );
 
   return {
     type,
     props: {
       ...props,
-      normalizedChildren,
+      children: normalizedChildren,
     },
   };
 };
 
-const render = () => {};
+const updateDOM = (
+  DOM: any,
+  prevProps: VirtualReactElementProps,
+  nextProps: VirtualReactElementProps,
+) => {
+  const DEFAULT_PROP_KEY = 'children';
+
+  for (const [prevPropKey, prevPropValue] of Object.entries(prevProps)) {
+    if (prevPropKey.startsWith('on')) {
+      DOM.removeEventListener(
+        prevPropKey.substring(2).toLowerCase(),
+        prevPropValue,
+      );
+    } else if (prevPropKey !== DEFAULT_PROP_KEY) {
+      DOM[prevPropKey] = '';
+    }
+  }
+
+  for (const [nextPropKey, nextPropValue] of Object.entries(nextProps)) {
+    if (nextPropKey.startsWith('on')) {
+      DOM.addEventListener(
+        nextPropKey.substring(2).toLowerCase(),
+        nextPropValue,
+      );
+    } else if (nextPropKey !== DEFAULT_PROP_KEY) {
+      DOM[nextPropKey] = nextPropValue;
+    }
+  }
+};
+
+const createDOM = (fiberNode: any) => {
+  const { type, props } = fiberNode;
+  let DOM = null;
+
+  if (type === 'TEXT') {
+    DOM = document.createTextNode('');
+  } else if (typeof type === 'string') {
+    DOM = document.createElement(type);
+  }
+
+  if (DOM !== null) {
+    updateDOM(DOM, {}, props);
+  }
+
+  return DOM;
+};
+
+/*
+ * render: ReactElement를 실제 DOM으로 변환함.
+ *
+ */
+
+const render = (
+  reactElement: VirtualReactElement,
+  containerDOMElement: any,
+) => {
+  const DOM = createDOM(reactElement);
+
+  if (DOM && Array.isArray(reactElement.props.children)) {
+    for (const child of reactElement.props.children) {
+      render(child, DOM);
+    }
+  }
+
+  containerDOMElement.appendChild(DOM);
+};
 
 function useState() {}
 

@@ -1,10 +1,13 @@
-import { ComponentFunction } from './index.ts';
-
 export type LooseObject = Record<string, unknown>;
+
+export interface ComponentFunction {
+  new (props: LooseObject): any;
+  (props: LooseObject): VirtualReactElement | string;
+}
 
 export type VirtualReactElementType = ComponentFunction | string;
 
-interface VirtualReactElementProps {
+export interface VirtualReactElementProps {
   children?: VirtualReactElement[];
   [propName: string]: unknown;
 }
