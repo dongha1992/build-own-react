@@ -1,36 +1,24 @@
 import {
   FiberNode,
   FiberNodeDOM,
-  LooseObject,
+  HookInFiberNode,
   VirtualReactElement,
-  VirtualReactElementProps,
-  VirtualReactElementType,
 } from './type.ts';
-import { isDefined, isVirtualReactElement } from './utils.ts';
+import {
+  Fragment,
+  isDefined,
+  isPlainObject,
+  isVirtualReactElement,
+} from './utils';
+import { createElement, createTextElement } from './element';
+import { createDOM, updateDOM } from './dom';
+import { Component, ComponentFunction } from './component';
 
-export interface ComponentFunction {
-  new (props: LooseObject): Component;
-  (props: LooseObject): VirtualReactElement | string;
-}
-
-abstract class Component {
-  props: LooseObject;
-  abstract state: unknown;
-  abstract setState: (value: unknown) => void;
-  abstract render(): VirtualReactElement | string;
-
-  constructor(props: LooseObject) {
-    this.props = props;
-  }
-
-  static REACT_COMPONENT = true;
-}
-
-let wipRoot: FiberNode | null = null; // 작업 중인 루트 fiber 노드
+let currentWorkingFiberRoot: FiberNode | null = null;
 let nextUnitOfWork: FiberNode | null = null;
 let currentRoot: FiberNode | null = null;
 let deletions: FiberNode[] = [];
-let wipFiber: FiberNode; // 작업 중인 fiber 노드
+let currentWorkingFiber: FiberNode;
 let hookIndex = 0;
 
 /**
@@ -40,7 +28,7 @@ let hookIndex = 0;
  */
 
 ((global: Window) => {
-  let frameDeadLine: number;
+  let frameDeadline: number;
   let pendingCallback: IdleRequestCallback;
 
   const id = 1;
@@ -48,7 +36,7 @@ let hookIndex = 0;
   const frameDuration = 1000 / targetFps; // 1프레임 당 16.67ms
 
   const channel = new MessageChannel(); // 매크로 태스크 생성
-  const timeRemaining = () => frameDeadLine - window.performance.now();
+  const timeRemaining = () => frameDeadline - window.performance.now();
 
   const deadline = {
     didTimeout: false,
@@ -63,7 +51,7 @@ let hookIndex = 0;
 
   global.requestIdleCallback = (callback: IdleRequestCallback) => {
     global.requestAnimationFrame((frameTime) => {
-      frameDeadLine = frameTime + frameDuration;
+      frameDeadline = frameTime + frameDuration;
       pendingCallback = callback;
       channel.port1.postMessage(null);
     });
@@ -71,88 +59,8 @@ let hookIndex = 0;
   };
 })(window);
 
-const Fragment = Symbol.for('react.fragment');
-
-const createTextElement = (text: string) => ({
-  type: 'TEXT',
-  props: {
-    nodeValue: text,
-  },
-});
-
-/**
- * createElement: JSX를 ReactElement로 변환한다.
- * @example
- *
- */
-
-const createElement = (
-  type: VirtualReactElementType,
-  props: LooseObject = {},
-  ...children: any[]
-): VirtualReactElement => {
-  const normalizedChildren: any = children.map((c) =>
-    isVirtualReactElement(c) ? c : createTextElement(String(c)),
-  );
-
-  return {
-    type,
-    props: {
-      ...props,
-      children: normalizedChildren,
-    },
-  };
-};
-
-const updateDOM = (
-  DOM: NonNullable<FiberNodeDOM>,
-  prevProps: VirtualReactElementProps,
-  nextProps: VirtualReactElementProps,
-) => {
-  const DEFAULT_PROP_KEY = 'children';
-
-  for (const [prevPropKey, prevPropValue] of Object.entries(prevProps)) {
-    if (prevPropKey.startsWith('on')) {
-      DOM.removeEventListener(
-        prevPropKey.substring(2).toLowerCase(),
-        prevPropValue as EventListener,
-      );
-    } else if (prevPropKey !== DEFAULT_PROP_KEY) {
-      (DOM as any)[prevPropKey] = '';
-    }
-  }
-
-  for (const [nextPropKey, nextPropValue] of Object.entries(nextProps)) {
-    if (nextPropKey.startsWith('on')) {
-      DOM.addEventListener(
-        nextPropKey.substring(2).toLowerCase(),
-        nextPropValue as EventListener,
-      );
-    } else if (nextPropKey !== DEFAULT_PROP_KEY) {
-      (DOM as any)[nextPropKey] = nextPropValue;
-    }
-  }
-};
-
-const createDOM = (fiberNode: FiberNode) => {
-  const { type, props } = fiberNode;
-  let DOM = null;
-
-  if (type === 'TEXT') {
-    DOM = document.createTextNode('');
-  } else if (typeof type === 'string') {
-    DOM = document.createElement(type);
-  }
-  if (DOM !== null) {
-    updateDOM(DOM, {}, props);
-  }
-
-  return DOM;
-};
-
 /*
  * reconcileChildren: 가상 DOM과 diff 알고리즘으로 비교 수행. Fiber 노드를 생성 및 조정함
- *
  */
 const reconcileChildren = (
   fiberNode: FiberNode,
@@ -292,24 +200,23 @@ const commitRoot = () => {
     }
   }
 
-  if (wipRoot) {
-    commitWork(wipRoot.child);
-    currentRoot = wipRoot;
+  if (currentWorkingFiberRoot) {
+    commitWork(currentWorkingFiberRoot.child);
+    currentRoot = currentWorkingFiberRoot;
   }
-  wipRoot = null;
+  currentWorkingFiberRoot = null;
 };
 
 /*
  * performUnitOfWork: 현재 Fiber 노드를 처리하고, 다음 Fiber 노드를 반환함
- *
  */
 const performUnitOfWork = (fiberNode: FiberNode) => {
   const { type } = fiberNode;
 
   switch (typeof type) {
     case 'function': {
-      wipFiber = fiberNode;
-      wipFiber.hooks = [];
+      currentWorkingFiber = fiberNode;
+      currentWorkingFiber.hooks = [];
       hookIndex = 0;
 
       let children: ReturnType<ComponentFunction>;
@@ -375,7 +282,7 @@ const workLoop: IdleRequestCallback = (deadline) => {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
   }
 
-  if (!nextUnitOfWork && wipRoot) {
+  if (!nextUnitOfWork && currentWorkingFiberRoot) {
     commitRoot();
   }
 
@@ -384,14 +291,13 @@ const workLoop: IdleRequestCallback = (deadline) => {
 
 /*
  * render: ReactElement를 실제 DOM으로 변환함.
- *
  */
 const render = (
   reactElement: VirtualReactElement,
   containerDOMElement: Element,
 ) => {
   currentRoot = null;
-  wipRoot = {
+  currentWorkingFiberRoot = {
     type: 'div',
     dom: containerDOMElement,
     props: {
@@ -399,7 +305,7 @@ const render = (
     },
     alternate: currentRoot,
   };
-  nextUnitOfWork = wipRoot;
+  nextUnitOfWork = currentWorkingFiberRoot;
   deletions = [];
 
   /** 아래 코드는 재귀로 동기적 작업함 **/
@@ -415,22 +321,57 @@ const render = (
   // containerDOMElement.appendChild(DOM);
 };
 
-function useState(initState: any) {
-  const hook: { state: any; queue: any[] } = {
+function useState<T>(initState: T): [T, (value: T) => void] {
+  const fiberNode = currentWorkingFiber;
+
+  const initialHook = {
     state: initState,
     queue: [],
   };
 
-  const setState = (value: any) => {
+  const hook: HookInFiberNode<T> = fiberNode?.alternate?.hooks
+    ? fiberNode.alternate.hooks[hookIndex]
+    : initialHook;
+
+  while (hook.queue.length) {
+    let newState = hook.queue.shift();
+    if (isPlainObject(hook.state) && isPlainObject(newState)) {
+      newState = { ...hook.state, ...newState };
+    }
+    if (isDefined(newState)) {
+      hook.state = newState;
+    }
+  }
+
+  if (typeof fiberNode.hooks === 'undefined') {
+    fiberNode.hooks = [];
+  }
+
+  fiberNode.hooks.push(hook);
+  hookIndex += 1;
+
+  const setState = (value: T) => {
     hook.queue.push(value);
+
+    if (currentRoot) {
+      currentWorkingFiberRoot = {
+        type: currentRoot.type,
+        dom: currentRoot.dom,
+        props: currentRoot.props,
+        alternate: currentRoot,
+      };
+      nextUnitOfWork = currentWorkingFiberRoot;
+      deletions = [];
+      currentRoot = null;
+    }
   };
 
   return [hook.state, setState];
 }
 
-function main() {
+(function main() {
   window.requestIdleCallback(workLoop);
-}
+})();
 
 export default {
   createElement,

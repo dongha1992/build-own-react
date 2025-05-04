@@ -12,7 +12,8 @@
     "@vitejs/plugin-react": "^4.4.1",
     "prettier": "^3.5.3",
     "typescript": "~5.7.2",
-    "vite": "^6.3.1"
+    "vite": "^6.3.1",
+    "vitest": "^3.1.2"
   },
   "keywords": [
     "react"
