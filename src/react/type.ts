@@ -1,4 +1,5 @@
-import { ComponentFunction } from './index.ts';
+import { ComponentFunction } from './component';
+import { Fragment } from './utils';
 
 export type LooseObject = Record<string, unknown>;
 
@@ -18,11 +19,15 @@ export type HookInFiberNode<T> = {
   state: T;
   queue: Array<T>;
 };
-export type VirtualReactElementType = ComponentFunction | string;
+export type VirtualReactElementType =
+  | ComponentFunction
+  | typeof Fragment
+  | string;
 
 export interface VirtualReactElementProps {
   children?: VirtualReactElement[];
   [propName: string]: unknown;
+  [propName: `on${string}`]: EventListener | undefined;
 }
 
 export interface VirtualReactElement {

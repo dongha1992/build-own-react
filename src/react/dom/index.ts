@@ -39,6 +39,7 @@ const createDOM = (fiberNode: FiberNode) => {
   } else if (typeof type === 'string') {
     DOM = document.createElement(type);
   }
+
   if (DOM !== null) {
     updateDOM(DOM, {}, props);
   }

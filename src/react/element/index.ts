@@ -20,9 +20,9 @@ const createTextElement = (text: string) => ({
 const createElement = (
   type: VirtualReactElementType,
   props: LooseObject = {},
-  ...children: any[]
+  ...children: (unknown | VirtualReactElement)[]
 ): VirtualReactElement => {
-  const normalizedChildren: any = children.map((c) =>
+  const normalizedChildren = children.map((c) =>
     isVirtualReactElement(c) ? c : createTextElement(String(c)),
   );
 
