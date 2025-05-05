@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPlainObject } from './index';
+import { isPlainObject } from '../index.ts';
 
 describe('isPlainObject', () => {
   it('object literals는 true를 반환한다.', () => {

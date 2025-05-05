@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { FiberNode } from '../type';
-import { createElement } from '../element';
-import { RendererState } from '../state';
-import { __internal } from './index';
+import { FiberNode } from '../../type.ts';
+import { createElement } from '../../element';
+import { RendererState } from '../../state';
+import { __internal } from '../index.ts';
 
 describe('performUnitOfWork', () => {
   test('string type에 대한 DOM을 생성하고 자식 node를 재조정한다.', () => {

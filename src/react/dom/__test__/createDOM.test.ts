@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { createDOM } from './index.ts';
-import { FiberNode } from '../type.ts';
+import { createDOM } from '../index.ts';
+import { FiberNode } from '../../type.ts';
 
 describe('createDOM', () => {
   test('type이 TEXT일 때 Text node를 생성한다.', () => {

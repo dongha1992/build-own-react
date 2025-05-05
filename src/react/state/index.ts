@@ -3,7 +3,7 @@ import { FiberNode } from '../type.ts';
 export class RendererState {
   private _currentWorkingFiberRoot: FiberNode | null = null;
   private _nextUnitOfWork: FiberNode | null = null;
-  private _currentRoot: FiberNode | null = null;
+  private _currentRoot: FiberNode | null = null; // 현재 DOM과 동기화된 Fiber
   private _deletions: FiberNode[] = [];
   private _currentWorkingFiber: FiberNode | null = null;
   private _hookIndex: number = 0;

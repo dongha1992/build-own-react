@@ -35,7 +35,10 @@ const reconcileChildren = (
     const virtualReactElement = virtualReactElements[index];
     let newFiberNode: FiberNode | undefined;
 
-    // 찐리액트는 key 비교로 처리함
+    /**
+     *  type이 같은 컴포넌트는 재사용하는 휴리스틱 알고리즘 모방
+     *  찐 리액트는 key 비교도 추가하여 처리함.
+     */
     const isSameType = Boolean(
       oldFiberNode &&
         virtualReactElement &&

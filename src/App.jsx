@@ -5,7 +5,7 @@ function App() {
   return (
     <div id="test">
       <button onClick={() => setState(state + 1)}>+</button>
-      <span style="color: red">{state}</span>
+      <span className="my-state">{state}</span>
     </div>
   );
 }

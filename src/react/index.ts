@@ -66,18 +66,6 @@ const render = (
   };
   state.nextUnitOfWork = state.currentWorkingFiberRoot;
   state.deletions = [];
-
-  /** 아래 코드는 재귀로 동기적 작업함 **/
-
-  // const DOM = createDOM(reactElement);
-  //
-  // if (Array.isArray(reactElement.props.children)) {
-  //   for (const child of reactElement.props.children) {
-  //     render(child, DOM);
-  //   }
-  // }
-  //
-  // containerDOMElement.appendChild(DOM);
 };
 
 function useState<T>(initState: T): [T, (value: T) => void] {

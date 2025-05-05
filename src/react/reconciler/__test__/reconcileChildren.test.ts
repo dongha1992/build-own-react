@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { createElement } from '../element';
-import { RendererState } from '../state';
-import { FiberNode } from '../type';
-import { __internal } from './index';
+import { createElement } from '../../element';
+import { RendererState } from '../../state';
+import { FiberNode } from '../../type.ts';
+import { __internal } from '../index.ts';
 
 describe('reconcileChildren', () => {
   test('child FiberNode 트리를 생성한다.', () => {

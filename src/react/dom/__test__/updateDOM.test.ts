@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import { VirtualReactElementProps } from '../type.ts';
-import { updateDOM } from './index.ts';
+import { VirtualReactElementProps } from '../../type.ts';
+import { updateDOM } from '../index.ts';
 
 describe('updateDOM', () => {
   test('prevProps를 제거하고 newProps를 추가한다.', () => {

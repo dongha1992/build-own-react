@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { createElement } from './index';
-import { Fragment } from '../utils';
+import { createElement } from '../index.ts';
+import { Fragment } from '../../utils';
 
 describe('createElement', () => {
   test('text를 포함한 기본적인 JSX 구조를 ReactElement로 반환한다.', () => {
