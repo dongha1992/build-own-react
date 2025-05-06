@@ -47,7 +47,9 @@ const state = new RendererState();
 })(window);
 
 /**
- * Fiber 트리를 생성 및 초기 렌더링 셋업
+ * 루트 Fiber 노드 생성
+ *
+ * 실제 렌더링 작업은 workLoop와 performUnitOfWork를 통해 비동기적으로 처리됨
  * @param reactElement - createElement로 반환된 가상 돔
  * @param containerDOMElement - 생성된 DOM을 렌더링할 실제 DOM 컨테이너 요소
  */
