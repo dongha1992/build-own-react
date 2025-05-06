@@ -1,27 +1,27 @@
 import { FiberNode } from '../type.ts';
 
 export class RendererState {
-  private _currentWorkingFiberRoot: FiberNode | null = null;
+  private _workInProgressFiberRoot: FiberNode | null = null;
   private _nextUnitOfWork: FiberNode | null = null;
-  private _currentRoot: FiberNode | null = null; // 현재 DOM과 동기화된 Fiber
+  private _currentRoot: FiberNode | null = null; // 현재 DOM과 동기화된 Fiber (마지막으로 DOM에 반영한 Fiber 트리)
   private _deletions: FiberNode[] = [];
-  private _currentWorkingFiber: FiberNode | null = null;
+  private _workInProgressFiber: FiberNode | null = null;
   private _hookIndex: number = 0;
 
   reset() {
-    this._currentWorkingFiberRoot = null;
+    this._workInProgressFiberRoot = null;
     this._nextUnitOfWork = null;
     this._currentRoot = null;
     this._deletions = [];
-    this._currentWorkingFiber = null;
+    this._workInProgressFiber = null;
     this._hookIndex = 0;
   }
 
-  get currentWorkingFiberRoot(): FiberNode | null {
-    return this._currentWorkingFiberRoot;
+  get workInProgressFiberRoot(): FiberNode | null {
+    return this._workInProgressFiberRoot;
   }
-  set currentWorkingFiberRoot(value: FiberNode | null) {
-    this._currentWorkingFiberRoot = value;
+  set workInProgressFiberRoot(value: FiberNode | null) {
+    this._workInProgressFiberRoot = value;
   }
 
   get nextUnitOfWork(): FiberNode | null {
@@ -45,11 +45,11 @@ export class RendererState {
     this._deletions = value;
   }
 
-  get currentWorkingFiber(): FiberNode | null {
-    return this._currentWorkingFiber;
+  get workInProgressFiber(): FiberNode | null {
+    return this._workInProgressFiber;
   }
-  set currentWorkingFiber(value: FiberNode | null) {
-    this._currentWorkingFiber = value;
+  set workInProgressFiber(value: FiberNode | null) {
+    this._workInProgressFiber = value;
   }
 
   get hookIndex(): number {

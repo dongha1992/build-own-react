@@ -2,7 +2,7 @@ import { HookInFiberNode, VirtualReactElement } from './type.ts';
 import { Fragment, isDefined, isPlainObject } from './utils';
 import { createElement } from './element';
 import { Component } from './component';
-import { workLoop } from './reconciler';
+import { __internal } from './reconciler';
 import { RendererState } from './state';
 
 const state = new RendererState();
@@ -14,7 +14,6 @@ const state = new RendererState();
  *   console.log(`남은 시간: ${deadline.timeRemaining()}ms`);
  * });
  */
-
 ((global: Window) => {
   let frameDeadline: number;
   let pendingCallback: IdleRequestCallback;
@@ -47,16 +46,17 @@ const state = new RendererState();
   };
 })(window);
 
-/*
- * render: ReactElement를 실제 DOM으로 변환함.
+/**
+ * Fiber 트리를 생성 및 초기 렌더링 셋업
+ * @param reactElement - createElement로 반환된 가상 돔
+ * @param containerDOMElement - 생성된 DOM을 렌더링할 실제 DOM 컨테이너 요소
  */
-
 const render = (
   reactElement: VirtualReactElement,
   containerDOMElement: Element,
 ) => {
   state.currentRoot = null;
-  state.currentWorkingFiberRoot = {
+  state.workInProgressFiberRoot = {
     type: 'div',
     dom: containerDOMElement,
     props: {
@@ -64,12 +64,12 @@ const render = (
     },
     alternate: state.currentRoot,
   };
-  state.nextUnitOfWork = state.currentWorkingFiberRoot;
+  state.nextUnitOfWork = state.workInProgressFiberRoot;
   state.deletions = [];
 };
 
 function useState<T>(initState: T): [T, (value: T) => void] {
-  const fiberNode = state.currentWorkingFiber;
+  const fiberNode = state.workInProgressFiber;
 
   const initialHook = {
     state: initState,
@@ -102,13 +102,13 @@ function useState<T>(initState: T): [T, (value: T) => void] {
     hook.queue.push(value);
 
     if (state.currentRoot) {
-      state.currentWorkingFiberRoot = {
+      state.workInProgressFiberRoot = {
         type: state.currentRoot.type,
         dom: state.currentRoot.dom,
         props: state.currentRoot.props,
         alternate: state.currentRoot,
       };
-      state.nextUnitOfWork = state.currentWorkingFiberRoot;
+      state.nextUnitOfWork = state.workInProgressFiberRoot;
       state.deletions = [];
       state.currentRoot = null;
     }
@@ -118,7 +118,9 @@ function useState<T>(initState: T): [T, (value: T) => void] {
 }
 
 (function main() {
-  window.requestIdleCallback((deadline) => workLoop(deadline, state));
+  window.requestIdleCallback((deadline) =>
+    __internal.workLoop(deadline, state),
+  );
 })();
 
 export default {

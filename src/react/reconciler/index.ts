@@ -8,12 +8,12 @@ import { RendererState } from '../state';
 
 /**
  * 부모 Fiber 노드와 자식 가상 리액트 엘리먼트를 비교하여 Fiber 트리를 조정함.
+ *
  * 가상 DOM 비교를 수행
  * @param fiberNode 부모 Fiber 노드
  * @param elements 자식 가상 엘리먼트 배열
  * @param state 렌더링 상태 객체
  */
-
 const reconcileChildren = (
   fiberNode: FiberNode,
   elements: Array<VirtualReactElement> = [],
@@ -36,7 +36,8 @@ const reconcileChildren = (
     let newFiberNode: FiberNode | undefined;
 
     /**
-     *  type이 같은 컴포넌트는 재사용하는 휴리스틱 알고리즘 모방
+     *  type이 같은 컴포넌트는 재사용하는 휴리스틱 알고리즘 모방.
+     *
      *  찐 리액트는 key 비교도 추가하여 처리함.
      */
     const isSameType = Boolean(
@@ -91,7 +92,10 @@ const reconcileChildren = (
 };
 
 /**
- * Fiber 트리의 변경사항을 실제 DOM에 적용. React의 Reconciler에서 커밋 페이즈
+ * Fiber 트리의 변경사항을 실제 DOM에 적용.
+ * React의 Reconciler에서 커밋 페이즈.
+ *
+ * (current = workInProgress로 교체)
  * @param state 렌더링 상태 객체
  */
 const commitRoot = (state: RendererState) => {
@@ -127,6 +131,7 @@ const commitRoot = (state: RendererState) => {
   const commitWork = (fiberNode?: FiberNode) => {
     if (fiberNode) {
       if (fiberNode.dom) {
+        // 함수 컴포넌트는 DOM 노드가 없으므로, 부모 Fiber를 탐색해 DOM 노드가 있는 부모 찾음.
         const parentFiberNode = findParentFiber(fiberNode);
         const parentDOM = parentFiberNode?.dom;
 
@@ -157,11 +162,11 @@ const commitRoot = (state: RendererState) => {
     }
   }
 
-  if (state.currentWorkingFiberRoot) {
-    commitWork(state.currentWorkingFiberRoot.child);
-    state.currentRoot = state.currentWorkingFiberRoot;
+  if (state.workInProgressFiberRoot) {
+    commitWork(state.workInProgressFiberRoot.child);
+    state.currentRoot = state.workInProgressFiberRoot;
   }
-  state.currentWorkingFiberRoot = null;
+  state.workInProgressFiberRoot = null;
 };
 
 /**
@@ -175,8 +180,8 @@ const performUnitOfWork = (fiberNode: FiberNode, state: RendererState) => {
 
   switch (typeof type) {
     case 'function': {
-      state.currentWorkingFiber = fiberNode;
-      state.currentWorkingFiber.hooks = [];
+      state.workInProgressFiber = fiberNode;
+      state.workInProgressFiber.hooks = [];
       state.hookIndex = 0;
 
       let children: ReturnType<ComponentFunction>;
@@ -192,7 +197,7 @@ const performUnitOfWork = (fiberNode: FiberNode, state: RendererState) => {
         component.setState = setState;
         children = component.render.bind(component)();
       } else {
-        children = type(fiberNode.props);
+        children = type(fiberNode.props); // 함수를 호출해 자식 요소 배열 반환.
       }
 
       reconcileChildren(
@@ -242,7 +247,8 @@ const performUnitOfWork = (fiberNode: FiberNode, state: RendererState) => {
 };
 
 /**
- * 작업 단위를 처리하며 렌더링 루프를 실행함
+ * 작업 단위를 처리하며 렌더링 루프를 실행함.
+ *
  * 남은 시간이 충분할 때까지 Fiber 노드를 처리하고, 완료 시 DOM 커밋
  * @param deadline 현재 프레임의 데드라인 객체
  * @param state 렌더링 상태 객체
@@ -252,7 +258,7 @@ const workLoop = (deadline: IdleDeadline, state: RendererState) => {
     state.nextUnitOfWork = performUnitOfWork(state.nextUnitOfWork, state);
   }
 
-  if (!state.nextUnitOfWork && state.currentWorkingFiberRoot) {
+  if (!state.nextUnitOfWork && state.workInProgressFiberRoot) {
     commitRoot(state);
   }
 
@@ -263,6 +269,5 @@ export const __internal = {
   performUnitOfWork,
   reconcileChildren,
   commitRoot,
+  workLoop,
 };
-
-export { workLoop };
