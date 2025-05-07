@@ -11,7 +11,7 @@ import { RendererState } from '../state';
  *
  * 가상 DOM 비교를 수행
  * @param fiberNode 부모 Fiber 노드
- * @param elements 자식 가상 엘리먼트 배열
+ * @param elements DOM에 렌더링하려는 리액트 요소들
  * @param state 렌더링 상태 객체
  */
 const reconcileChildren = (
@@ -20,7 +20,7 @@ const reconcileChildren = (
   state: RendererState,
 ) => {
   let index = 0;
-  let oldFiberNode: FiberNode | undefined;
+  let oldFiberNode: FiberNode | undefined; // 마지막으로 렌더링한 Fiber
   let prevSibling: FiberNode | undefined;
   const virtualReactElements = elements.flat(Infinity);
 
@@ -157,6 +157,7 @@ const commitRoot = (state: RendererState) => {
 
   for (const deletion of state.deletions) {
     if (deletion.dom) {
+      // 함수 컴포넌트는 DOM 노드가 없으므로, 부모 Fiber를 탐색해 DOM 노드가 있는 부모 찾음.
       const parentFiberNode = findParentFiber(deletion);
       commitDeletion(parentFiberNode?.dom, deletion.dom);
     }
